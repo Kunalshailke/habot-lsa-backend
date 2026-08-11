@@ -11,6 +11,7 @@ from .serializers import LSASerializer
 
 from rest_framework.permissions import IsAuthenticated
 
+from django.db import transaction
 
 
 class BookingCreateView(APIView):
@@ -96,17 +97,18 @@ class BookingConfirmView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        booking = Booking.objects.create(
-            booking_request=booking_request,
-            parent=booking_request.parent,
-            lsa=lsa,
-            start_time=booking_request.start_time,
-            end_time=booking_request.end_time,
-            status="CONFIRMED",
-        )
+        with transaction.atomic():
+            booking = Booking.objects.create(
+                booking_request=booking_request,
+                parent=booking_request.parent,
+                lsa=booking_request.preferred_lsa,
+                start_time=booking_request.start_time,
+                end_time=booking_request.end_time,
+                status="CONFIRMED",
+            )
 
-        booking_request.status = "ACCEPTED"
-        booking_request.save(update_fields=["status"])
+            booking_request.status = "ACCEPTED"
+            booking_request.save(update_fields=["status"])
 
         return Response(
             BookingSerializer(booking).data,
