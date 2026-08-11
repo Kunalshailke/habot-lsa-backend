@@ -3,19 +3,11 @@ from rest_framework import status
 
 from bookings.models import Parent, Skill, LSAProfile, BookingRequest, Booking 
 
+from rest_framework.authtoken.models import Token
+from django.contrib.auth.models import User
+
 
 class BookingAPITests(APITestCase):
-
-    def setUp(self):
-        self.parent = Parent.objects.create(
-            name="Test Parent",
-            email="testparent@example.com",
-            phone="9999999999",
-        )
-
-        self.skill = Skill.objects.create(
-            name="Python",
-        )
 
     def test_create_booking_success(self):
         data = {
@@ -282,3 +274,41 @@ class BookingAPITests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("overlapping", response.data["error"].lower())
+
+
+
+    def setUp(self):
+        self.parent = Parent.objects.create(
+            name="Test Parent",
+            email="testparent@example.com",
+            phone="9999999999",
+        )
+
+        self.skill = Skill.objects.create(
+            name="Python",
+        )
+
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="testpassword123",
+        )
+
+        self.token = Token.objects.create(
+            user=self.user
+        )
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Token {self.token.key}"
+        )
+
+
+    def test_booking_requires_authentication(self):
+
+        self.client.credentials()
+
+        response = self.client.post(
+            "/api/v1/bookings/",
+            {}
+        )
+
+        self.assertEqual(response.status_code, 401)

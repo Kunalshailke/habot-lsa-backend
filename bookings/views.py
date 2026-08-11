@@ -9,8 +9,13 @@ from .serializers import BookingRequestSerializer, BookingSerializer
 from .models import BookingRequest, LSAProfile, Booking
 from .serializers import LSASerializer
 
+from rest_framework.permissions import IsAuthenticated
+
+
 
 class BookingCreateView(APIView):
+
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = BookingRequestSerializer(data=request.data)
@@ -30,8 +35,9 @@ class BookingCreateView(APIView):
 
 
 
-
 class BookingConfirmView(APIView):
+
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, booking_request_id):
 
@@ -107,8 +113,11 @@ class BookingConfirmView(APIView):
             status=status.HTTP_201_CREATED,
         )
     
+
     
 class LSASearchView(APIView):
+
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
