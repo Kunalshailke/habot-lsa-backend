@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 
-from bookings.models import Parent, Skill, LSAProfile
+from bookings.models import Parent, Skill, LSAProfile, BookingRequest
 
 
 class BookingAPITests(APITestCase):
@@ -101,4 +101,52 @@ class BookingAPITests(APITestCase):
         self.assertEqual(
             len(response.data),
             0,
+        )
+
+
+    def test_confirm_booking_request_success(self):
+
+        parent = Parent.objects.create(
+            name="Test Parent",
+            email="confirm@example.com",
+            phone="1234567890",
+        )
+
+        skill = Skill.objects.create(
+            name="ConfirmationSkill"
+        )
+
+        lsa = LSAProfile.objects.create(
+            name="Test LSA",
+            email="confirm-lsa@example.com",
+            phone="9876543210",
+            is_available=True,
+        )
+
+        lsa.skills.add(skill)
+
+        booking_request = BookingRequest.objects.create(
+            parent=parent,
+            required_skill=skill,
+            preferred_lsa=lsa,
+            start_time="2026-08-15T10:00:00Z",
+            end_time="2026-08-15T12:00:00Z",
+        )
+
+        response = self.client.post(
+            f"/api/v1/booking-requests/{booking_request.id}/confirm/"
+        )
+
+        self.assertEqual(response.status_code, 201)
+
+        booking_request.refresh_from_db()
+
+        self.assertEqual(
+            booking_request.status,
+            "ACCEPTED"
+        )
+
+        self.assertEqual(
+            response.data["lsa"],
+            lsa.id
         )

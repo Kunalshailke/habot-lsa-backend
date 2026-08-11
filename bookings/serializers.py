@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import BookingRequest, LSAProfile
+from .models import BookingRequest, LSAProfile, Booking
 
 
 class BookingRequestSerializer(serializers.ModelSerializer):
@@ -56,4 +56,24 @@ class LSASerializer(serializers.ModelSerializer):
             "phone",
             "skills",
             "is_available",
+        ]
+
+class BookingSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Booking
+        fields = [
+            "id",
+            "booking_request",
+            "parent",
+            "lsa",
+            "start_time",
+            "end_time",
+            "created_at",
+            "status",
+        ]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "status",
         ]
