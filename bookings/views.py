@@ -48,10 +48,52 @@ class BookingConfirmView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        lsa = booking_request.preferred_lsa
+
+        if not lsa:
+            return Response(
+                {
+                    "error": "A preferred LSA is required for confirmation."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not lsa.is_available:
+            return Response(
+                {
+                    "error": "This LSA is currently unavailable."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not lsa.skills.filter(
+            id=booking_request.required_skill_id
+        ).exists():
+            return Response(
+                {
+                    "error": "This LSA does not have the required skill."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        overlapping_booking = Booking.objects.filter(
+            lsa=lsa,
+            start_time__lt=booking_request.end_time,
+            end_time__gt=booking_request.start_time,
+        ).exists()
+
+        if overlapping_booking:
+            return Response(
+                {
+                    "error": "This LSA already has an overlapping booking."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         booking = Booking.objects.create(
             booking_request=booking_request,
             parent=booking_request.parent,
-            lsa=booking_request.preferred_lsa,
+            lsa=lsa,
             start_time=booking_request.start_time,
             end_time=booking_request.end_time,
             status="CONFIRMED",
@@ -64,7 +106,6 @@ class BookingConfirmView(APIView):
             BookingSerializer(booking).data,
             status=status.HTTP_201_CREATED,
         )
-
     
     
 class LSASearchView(APIView):

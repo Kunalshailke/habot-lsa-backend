@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 
-from bookings.models import Parent, Skill, LSAProfile, BookingRequest
+from bookings.models import Parent, Skill, LSAProfile, BookingRequest, Booking 
 
 
 class BookingAPITests(APITestCase):
@@ -150,3 +150,135 @@ class BookingAPITests(APITestCase):
             response.data["lsa"],
             lsa.id
         )
+
+
+    def test_confirm_booking_request_unavailable_lsa(self):
+
+        parent = Parent.objects.create(
+            name="Unavailable Parent",
+            email="unavailable@example.com",
+            phone="1234567890",
+        )
+
+        skill = Skill.objects.create(
+            name="UnavailableSkill"
+        )
+
+        lsa = LSAProfile.objects.create(
+            name="Unavailable LSA",
+            email="unavailable-lsa@example.com",
+            phone="9876543210",
+            is_available=False,
+        )
+
+        lsa.skills.add(skill)
+
+        booking_request = BookingRequest.objects.create(
+            parent=parent,
+            required_skill=skill,
+            preferred_lsa=lsa,
+            start_time="2026-08-15T10:00:00Z",
+            end_time="2026-08-15T12:00:00Z",
+        )
+
+        response = self.client.post(
+            f"/api/v1/booking-requests/{booking_request.id}/confirm/"
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("unavailable", response.data["error"].lower())
+
+
+    def test_confirm_booking_request_missing_skill(self):
+
+        parent = Parent.objects.create(
+            name="Skill Parent",
+            email="skill@example.com",
+            phone="1234567890",
+        )
+
+        required_skill = Skill.objects.create(
+            name="RequiredSkill"
+        )
+
+        other_skill = Skill.objects.create(
+            name="OtherSkill"
+        )
+
+        lsa = LSAProfile.objects.create(
+            name="Wrong Skill LSA",
+            email="wrong-skill@example.com",
+            phone="9876543210",
+            is_available=True,
+        )
+
+        lsa.skills.add(other_skill)
+
+        booking_request = BookingRequest.objects.create(
+            parent=parent,
+            required_skill=required_skill,
+            preferred_lsa=lsa,
+            start_time="2026-08-16T10:00:00Z",
+            end_time="2026-08-16T12:00:00Z",
+        )
+
+        response = self.client.post(
+            f"/api/v1/booking-requests/{booking_request.id}/confirm/"
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("required skill", response.data["error"].lower())
+
+
+    def test_confirm_booking_request_booking_conflict(self):
+
+        parent = Parent.objects.create(
+            name="Conflict Parent",
+            email="conflict@example.com",
+            phone="1234567890",
+        )
+
+        skill = Skill.objects.create(
+            name="ConflictSkill"
+        )
+
+        lsa = LSAProfile.objects.create(
+            name="Conflict LSA",
+            email="conflict-lsa@example.com",
+            phone="9876543210",
+            is_available=True,
+        )
+
+        lsa.skills.add(skill)
+
+        existing_request = BookingRequest.objects.create(
+            parent=parent,
+            required_skill=skill,
+            preferred_lsa=lsa,
+            start_time="2026-08-17T10:00:00Z",
+            end_time="2026-08-17T12:00:00Z",
+        )
+
+        Booking.objects.create(
+            booking_request=existing_request,
+            parent=parent,
+            lsa=lsa,
+            start_time="2026-08-17T10:00:00Z",
+            end_time="2026-08-17T12:00:00Z",
+            status="CONFIRMED",
+        )
+
+        new_request = BookingRequest.objects.create(
+            parent=parent,
+            required_skill=skill,
+            preferred_lsa=lsa,
+            start_time="2026-08-17T11:00:00Z",
+            end_time="2026-08-17T13:00:00Z",
+        )
+
+        response = self.client.post(
+            f"/api/v1/booking-requests/{new_request.id}/confirm/"
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("overlapping", response.data["error"].lower())
