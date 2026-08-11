@@ -37,7 +37,7 @@ class LSASearchView(APIView):
 
         lsas = LSAProfile.objects.filter(
             is_available=True
-        )
+        ).prefetch_related("skills")
 
         if skill:
             lsas = lsas.filter(
