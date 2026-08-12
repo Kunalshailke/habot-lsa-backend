@@ -394,3 +394,150 @@ class BookingAPITests(APITestCase):
         )
 
         mock_payment.assert_called_once()
+
+
+    def test_payment_webhook_success(self):
+        parent = Parent.objects.create(
+            name="Webhook Parent",
+            email="webhook@example.com",
+            phone="1234567890",
+        )
+
+        skill = Skill.objects.create(
+            name="WebhookSkill",
+        )
+
+        lsa = LSAProfile.objects.create(
+            name="Webhook LSA",
+            email="webhook-lsa@example.com",
+            phone="9876543210",
+            is_available=True,
+        )
+
+        lsa.skills.add(skill)
+
+        booking_request = BookingRequest.objects.create(
+            parent=parent,
+            required_skill=skill,
+            preferred_lsa=lsa,
+            start_time="2026-12-01T10:00:00Z",
+            end_time="2026-12-01T12:00:00Z",
+            status="ACCEPTED",
+        )
+
+        booking = Booking.objects.create(
+            booking_request=booking_request,
+            parent=parent,
+            lsa=lsa,
+            start_time="2026-12-01T10:00:00Z",
+            end_time="2026-12-01T12:00:00Z",
+            status="CONFIRMED",
+        )
+
+        payment = Payment.objects.create(
+            booking=booking,
+            amount="500.00",
+            status="PENDING",
+        )
+
+        response = self.client.post(
+            "/api/v1/payments/webhook/",
+            {
+                "booking_id": booking.id,
+                "status": "SUCCESS",
+                "transaction_id": "webhook-txn-123",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        payment.refresh_from_db()
+        booking.refresh_from_db()
+
+        self.assertEqual(payment.status, "SUCCESS")
+        self.assertEqual(
+            payment.transaction_id,
+            "webhook-txn-123",
+        )
+        self.assertEqual(booking.status, "CONFIRMED")
+
+
+
+    def test_payment_webhook_failure(self):
+        parent = Parent.objects.create(
+            name="Webhook Failure Parent",
+            email="webhook-failure@example.com",
+            phone="1234567890",
+        )
+
+        skill = Skill.objects.create(
+            name="WebhookFailureSkill",
+        )
+
+        lsa = LSAProfile.objects.create(
+            name="Webhook Failure LSA",
+            email="webhook-failure-lsa@example.com",
+            phone="9876543210",
+            is_available=True,
+        )
+
+        lsa.skills.add(skill)
+
+        booking_request = BookingRequest.objects.create(
+            parent=parent,
+            required_skill=skill,
+            preferred_lsa=lsa,
+            start_time="2026-12-02T10:00:00Z",
+            end_time="2026-12-02T12:00:00Z",
+            status="ACCEPTED",
+        )
+
+        booking = Booking.objects.create(
+            booking_request=booking_request,
+            parent=parent,
+            lsa=lsa,
+            start_time="2026-12-02T10:00:00Z",
+            end_time="2026-12-02T12:00:00Z",
+            status="CONFIRMED",
+        )
+
+        Payment.objects.create(
+            booking=booking,
+            amount="500.00",
+            status="PENDING",
+        )
+
+        response = self.client.post(
+            "/api/v1/payments/webhook/",
+            {
+                "booking_id": booking.id,
+                "status": "FAILED",
+                "transaction_id": "webhook-failed-123",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        payment = Payment.objects.get(
+            booking=booking,
+        )
+
+        booking.refresh_from_db()
+
+        self.assertEqual(payment.status, "FAILED")
+        self.assertEqual(
+            payment.transaction_id,
+            "webhook-failed-123",
+        )
+        self.assertEqual(
+            booking.status,
+            "CANCELLED",
+        )

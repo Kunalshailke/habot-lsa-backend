@@ -39,6 +39,7 @@ class BookingRequest(models.Model):
         ("REJECTED" , "Rejected"),
     ]
 
+
     parent = models.ForeignKey(
         Parent,
         on_delete=models.CASCADE,
@@ -62,6 +63,18 @@ class BookingRequest(models.Model):
     end_time = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField( max_length=20, choices=STATUS_CHOICES, default="PENDING")
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["preferred_lsa", "start_time", "end_time"],
+                name="booking_req_lsa_time_idx",
+            ),
+            models.Index(
+                fields=["status"],
+                name="booking_req_status_idx",
+            ),
+        ]
 
     def __str__(self):
         return f" Request #{self.id}"
@@ -99,6 +112,17 @@ class Booking(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="CONFIRMED")
 
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["lsa", "start_time", "end_time"],
+                name="booking_lsa_time_idx",
+            ),
+            models.Index(
+                fields=["status"],
+                name="booking_status_idx",
+            ),
+        ]
 
     def __str__(self):
         return f" Booking #{self.id}"
@@ -122,6 +146,6 @@ class Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
     transaction_id = models.CharField(max_length=100, unique=True, null=True, blank=True,)
-    
+
     def __str__(self):
         return f" Payment for Booking #{self.booking_id}"
