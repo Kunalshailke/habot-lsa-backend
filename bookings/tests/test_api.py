@@ -312,3 +312,17 @@ class BookingAPITests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 401)
+
+
+    def test_api_root(self):
+        response = self.client.get("/api/v1/")
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["status"],
+            "ok",
+        )

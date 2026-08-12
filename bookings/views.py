@@ -14,6 +14,17 @@ from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 
 
+class APIRootView(APIView):
+
+    def get(self, request):
+        return Response(
+            {
+                "message": "HABOT LSA Backend API",
+                "status": "ok",
+            },
+            status=status.HTTP_200_OK,
+        )
+
 class BookingCreateView(APIView):
 
     permission_classes = [IsAuthenticated]
