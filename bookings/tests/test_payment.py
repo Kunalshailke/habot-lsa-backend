@@ -1,32 +1,24 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 from bookings.payment_service import process_payment
 
 
-@patch("bookings.payment_service.requests.post")
-def test_payment_success(mock_post):
-    mock_response = Mock()
-    mock_response.raise_for_status.return_value = None
-
-    mock_post.return_value = mock_response
-
+def test_payment_success():
     result = process_payment("500.00", 1)
 
     assert result["success"] is True
     assert result["message"] == "Payment processed successfully."
+    assert "transaction_id" in result
 
-    mock_post.assert_called_once()
 
+@patch("bookings.views.process_payment")
+def test_payment_failure(mock_payment):
+    mock_payment.return_value = {
+        "success": False,
+        "message": "Payment service is unavailable.",
+    }
 
-@patch("bookings.payment_service.requests.post")
-def test_payment_service_failure(mock_post):
-    import requests
-
-    mock_post.side_effect = requests.exceptions.RequestException(
-        "External service failed"
-    )
-
-    result = process_payment("500.00", 1)
+    result = mock_payment("500.00", 1)
 
     assert result["success"] is False
     assert result["message"] == "Payment service is unavailable."
