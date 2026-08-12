@@ -1,10 +1,13 @@
 import logging
+import uuid
 
 import requests
 
 
 logger = logging.getLogger(__name__)
+
 MOCK_PAYMENT_URL = "https://httpbin.org/post"
+
 
 def process_payment(amount, booking_id):
     payload = {
@@ -29,6 +32,7 @@ def process_payment(amount, booking_id):
         return {
             "success": True,
             "message": "Payment processed successfully.",
+            "transaction_id": str(uuid.uuid4()),
         }
 
     except requests.exceptions.Timeout:

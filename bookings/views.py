@@ -14,6 +14,8 @@ from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
+from .models import BookingRequest, LSAProfile, Booking, Payment
+from .payment_service import process_payment
 
 class APIRootView(APIView):
 
@@ -112,7 +114,13 @@ class BookingConfirmView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # IMPORTANT:
+        # This line has 8 spaces.
+        # It is INSIDE def post().
         with transaction.atomic():
+
+            # This code has 12 spaces.
+            # It is INSIDE transaction.atomic().
             booking = Booking.objects.create(
                 booking_request=booking_request,
                 parent=booking_request.parent,
@@ -122,14 +130,38 @@ class BookingConfirmView(APIView):
                 status="CONFIRMED",
             )
 
+            payment_result = process_payment(
+                amount="500.00",
+                booking_id=booking.id,
+            )
+
+            if not payment_result["success"]:
+                transaction.set_rollback(True)
+
+                return Response(
+                    {
+                        "error": payment_result["message"],
+                    },
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+
+            Payment.objects.create(
+                booking=booking,
+                amount="500.00",
+                status="SUCCESS",
+                transaction_id=payment_result["transaction_id"],
+            )
+
             booking_request.status = "ACCEPTED"
             booking_request.save(update_fields=["status"])
 
+        # IMPORTANT:
+        # This return has 8 spaces.
+        # It is INSIDE def post(), but OUTSIDE transaction.atomic().
         return Response(
             BookingSerializer(booking).data,
             status=status.HTTP_201_CREATED,
         )
-
 
 
 class LSASearchView(APIView):

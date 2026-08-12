@@ -1,11 +1,12 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 
-from bookings.models import Parent, Skill, LSAProfile, BookingRequest, Booking 
+from bookings.models import Parent, Skill, LSAProfile, BookingRequest, Booking, Payment
 
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 
+from unittest.mock import patch
 
 class BookingAPITests(APITestCase):
 
@@ -96,7 +97,13 @@ class BookingAPITests(APITestCase):
         )
 
 
-    def test_confirm_booking_request_success(self):
+    @patch("bookings.views.process_payment")
+    def test_confirm_booking_request_success(self, mock_payment):
+        mock_payment.return_value = {
+            "success": True,
+            "message": "Payment processed successfully.",
+            "transaction_id": "txn-test-123",
+        }
 
         parent = Parent.objects.create(
             name="Test Parent",
@@ -135,12 +142,12 @@ class BookingAPITests(APITestCase):
 
         self.assertEqual(
             booking_request.status,
-            "ACCEPTED"
+            "ACCEPTED",
         )
 
         self.assertEqual(
             response.data["lsa"],
-            lsa.id
+            lsa.id,
         )
 
 
@@ -326,3 +333,64 @@ class BookingAPITests(APITestCase):
             response.data["status"],
             "ok",
         )
+
+    @patch("bookings.views.process_payment")
+    def test_confirm_booking_creates_payment(self, mock_payment):
+
+        mock_payment.return_value = {
+            "success": True,
+            "message": "Payment processed successfully.",
+            "transaction_id": "txn-test-123",
+        }
+
+        parent = Parent.objects.create(
+            name="Payment Parent",
+            email="payment-parent@example.com",
+            phone="1234567890",
+        )
+
+        skill = Skill.objects.create(
+            name="PaymentSkill",
+        )
+
+        lsa = LSAProfile.objects.create(
+            name="Payment LSA",
+            email="payment-lsa@example.com",
+            phone="9876543210",
+            is_available=True,
+        )
+
+        lsa.skills.add(skill)
+
+        booking_request = BookingRequest.objects.create(
+            parent=parent,
+            required_skill=skill,
+            preferred_lsa=lsa,
+            start_time="2026-09-01T10:00:00Z",
+            end_time="2026-09-01T12:00:00Z",
+        )
+
+        response = self.client.post(
+            f"/api/v1/booking-requests/{booking_request.id}/confirm/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        booking = Booking.objects.get(
+            booking_request=booking_request,
+        )
+
+        payment = Payment.objects.get(
+            booking=booking,
+        )
+
+        self.assertEqual(payment.status, "SUCCESS")
+        self.assertEqual(
+            payment.transaction_id,
+            "txn-test-123",
+        )
+
+        mock_payment.assert_called_once()
