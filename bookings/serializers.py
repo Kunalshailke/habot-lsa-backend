@@ -31,6 +31,21 @@ class BookingRequestSerializer(serializers.ModelSerializer):
             )
 
         if preferred_lsa:
+
+            if not preferred_lsa.is_available:
+                raise serializers.ValidationError(
+                    "Selected LSA is currently unavailable."
+                )
+
+            required_skill = data["required_skill"]
+
+            if not preferred_lsa.skills.filter(
+                id=required_skill.id
+            ).exists():
+                raise serializers.ValidationError(
+                    "Selected LSA does not have the required skill."
+                )
+
             overlapping_request = BookingRequest.objects.filter(
                 preferred_lsa=preferred_lsa,
                 start_time__lt=end_time,

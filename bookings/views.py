@@ -12,18 +12,22 @@ from .serializers import LSASerializer
 from rest_framework.permissions import IsAuthenticated
 
 from django.db import transaction
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 
 class APIRootView(APIView):
 
+    permission_classes = [AllowAny]
+
     def get(self, request):
-        return Response(
-            {
-                "message": "HABOT LSA Backend API",
-                "status": "ok",
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response({
+            "status": "ok",
+            "bookings": "/api/v1/bookings/",
+            "lsa_search": "/api/v1/lsas/search/",
+            "booking_confirm": "/api/v1/booking-requests/<id>/confirm/",
+            "auth_token": "/api/v1/auth/token/",
+        })
+
 
 class BookingCreateView(APIView):
 
@@ -125,9 +129,9 @@ class BookingConfirmView(APIView):
             BookingSerializer(booking).data,
             status=status.HTTP_201_CREATED,
         )
-    
 
-    
+
+
 class LSASearchView(APIView):
 
     permission_classes = [IsAuthenticated]
