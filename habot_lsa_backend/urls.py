@@ -17,9 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework.authtoken.views import obtain_auth_token
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("", RedirectView.as_view(url="/api/v1/", permanent=False), name="root"),
     path("api/v1/", include("bookings.urls")),
     path("api/v1/auth/token/", obtain_auth_token, name="api-token"),
 ]
