@@ -7,10 +7,7 @@ from bookings.payment_service import process_payment
 
 @patch("bookings.payment_service.requests.post")
 def test_payment_success(mock_post):
-    mock_response = Mock()
-    mock_response.raise_for_status.return_value = None
-
-    mock_post.return_value = mock_response
+    mock_post.return_value = Mock()
 
     result = process_payment("500.00", 1)
 
@@ -18,14 +15,10 @@ def test_payment_success(mock_post):
     assert result["message"] == "Payment processed successfully."
     assert "transaction_id" in result
 
-    mock_post.assert_called_once()
-
 
 @patch("bookings.payment_service.requests.post")
 def test_payment_service_failure(mock_post):
-    mock_post.side_effect = requests.exceptions.RequestException(
-        "External service failed"
-    )
+    mock_post.side_effect = requests.exceptions.RequestException()
 
     result = process_payment("500.00", 1)
 

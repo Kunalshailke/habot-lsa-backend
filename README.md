@@ -1,10 +1,6 @@
 # Habot LSA Booking Backend
 
-## Project Overview
-
-A Django REST Framework backend prototype for connecting parents with Learning Support Assistants (LSAs) and managing skill-based booking requests, confirmed bookings, and simulated payments.
-
-This project was developed as part of the HabotConnect Python Backend Developer hiring project.
+A Django REST API for managing Learning Support Assistant (LSA) booking requests, bookings, and simulated payments.
 
 ## Tech Stack
 
@@ -12,26 +8,22 @@ This project was developed as part of the HabotConnect Python Backend Developer 
 - Django
 - Django REST Framework
 - SQLite
-- Django ORM
 - pytest
 - pytest-django
 - GitHub Actions
 
-## Features
+## Main Features
 
-- Parent, Skill, LSA, Booking Request, Booking, and Payment models
-- Token-based API authentication
-- LSA search by skill
-- Availability filtering
+- Parent, LSA and skill data models
+- Skill-based LSA search
+- LSA availability checking
 - Booking request creation
-- Booking overlap validation
 - Booking confirmation
-- Payment processing simulation
-- Payment success/failure handling
-- Payment webhook
-- Database indexes for booking queries
-- Automated tests
-- GitHub Actions CI workflow
+- Booking overlap validation
+- Simulated payment processing
+- Payment webhook handling
+- Token authentication
+- Automated API tests
 
 ## Project Structure
 
@@ -40,6 +32,8 @@ habot_lsa_backend/
 ├── bookings/
 │   ├── migrations/
 │   ├── tests/
+│   │   ├── test_api.py
+│   │   └── test_payment.py
 │   ├── admin.py
 │   ├── models.py
 │   ├── payment_service.py

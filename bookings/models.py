@@ -30,59 +30,44 @@ class LSAProfile(models.Model):
         return self.name
 
 
-
 class BookingRequest(models.Model):
-
     STATUS_CHOICES = [
-        ("PENDING" , "Pending"),
-        ("ACCEPTED" , "Accepted"),
-        ("REJECTED" , "Rejected"),
+        ("PENDING", "Pending"),
+        ("ACCEPTED", "Accepted"),
+        ("REJECTED", "Rejected"),
     ]
-
 
     parent = models.ForeignKey(
         Parent,
         on_delete=models.CASCADE,
-        related_name="booking_requests"
-
+        related_name="booking_requests",
     )
     required_skill = models.ForeignKey(
         Skill,
         on_delete=models.PROTECT,
-        related_name="booking_requests"
+        related_name="booking_requests",
     )
-
     preferred_lsa = models.ForeignKey(
         LSAProfile,
         on_delete=models.SET_NULL,
-        related_name="booking_requests",
         null=True,
         blank=True,
+        related_name="booking_requests",
     )
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField( max_length=20, choices=STATUS_CHOICES, default="PENDING")
-
-    class Meta:
-        indexes = [
-            models.Index(
-                fields=["preferred_lsa", "start_time", "end_time"],
-                name="booking_req_lsa_time_idx",
-            ),
-            models.Index(
-                fields=["status"],
-                name="booking_req_status_idx",
-            ),
-        ]
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="PENDING",
+    )
 
     def __str__(self):
-        return f" Request #{self.id}"
-
+        return f"Request #{self.id}"
 
 
 class Booking(models.Model):
-
     STATUS_CHOICES = [
         ("CANCELLED", "Cancelled"),
         ("CONFIRMED", "Confirmed"),
@@ -92,60 +77,59 @@ class Booking(models.Model):
     booking_request = models.OneToOneField(
         BookingRequest,
         on_delete=models.PROTECT,
-        related_name="bookings",
+        related_name="booking",
     )
-
     parent = models.ForeignKey(
         Parent,
         on_delete=models.PROTECT,
-        related_name="bookings"
+        related_name="bookings",
     )
-
     lsa = models.ForeignKey(
         LSAProfile,
         on_delete=models.PROTECT,
-        related_name="bookings"
+        related_name="bookings",
     )
-
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="CONFIRMED")
-
-    class Meta:
-        indexes = [
-            models.Index(
-                fields=["lsa", "start_time", "end_time"],
-                name="booking_lsa_time_idx",
-            ),
-            models.Index(
-                fields=["status"],
-                name="booking_status_idx",
-            ),
-        ]
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="CONFIRMED",
+    )
 
     def __str__(self):
-        return f" Booking #{self.id}"
+        return f"Booking #{self.id}"
 
 
 class Payment(models.Model):
-
     STATUS_CHOICES = [
-        ("PENDING","Pending"),
-        ("SUCCESS","Success"),
-        ("FAILED","Failed"),
+        ("PENDING", "Pending"),
+        ("SUCCESS", "Success"),
+        ("FAILED", "Failed"),
     ]
 
     booking = models.OneToOneField(
         Booking,
         on_delete=models.PROTECT,
-        related_name="payment"
+        related_name="payment",
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="PENDING",
+    )
+    transaction_id = models.CharField(
+        max_length=100,
+        unique=True,
+        null=True,
+        blank=True,
     )
 
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
-    transaction_id = models.CharField(max_length=100, unique=True, null=True, blank=True,)
-
     def __str__(self):
-        return f" Payment for Booking #{self.booking_id}"
+        return f"Payment for Booking #{self.booking_id}"

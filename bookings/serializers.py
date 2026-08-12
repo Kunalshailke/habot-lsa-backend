@@ -18,12 +18,10 @@ class BookingRequestSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "created_at", "status"]
 
-
     def validate(self, data):
         start_time = data["start_time"]
         end_time = data["end_time"]
         preferred_lsa = data.get("preferred_lsa")
-
 
         if start_time >= end_time:
             raise serializers.ValidationError(
@@ -31,35 +29,33 @@ class BookingRequestSerializer(serializers.ModelSerializer):
             )
 
         if preferred_lsa:
-
             if not preferred_lsa.is_available:
                 raise serializers.ValidationError(
                     "Selected LSA is currently unavailable."
                 )
 
-            required_skill = data["required_skill"]
-
             if not preferred_lsa.skills.filter(
-                id=required_skill.id
+                id=data["required_skill"].id
             ).exists():
                 raise serializers.ValidationError(
                     "Selected LSA does not have the required skill."
                 )
 
-            overlapping_request = BookingRequest.objects.filter(
+            overlap = BookingRequest.objects.filter(
                 preferred_lsa=preferred_lsa,
                 start_time__lt=end_time,
                 end_time__gt=start_time,
             ).exists()
 
-            if overlapping_request:
+            if overlap:
                 raise serializers.ValidationError(
                     "This LSA already has an overlapping booking request."
                 )
+
         return data
 
-class LSASerializer(serializers.ModelSerializer):
 
+class LSASerializer(serializers.ModelSerializer):
     skills = serializers.StringRelatedField(many=True)
 
     class Meta:
@@ -73,8 +69,8 @@ class LSASerializer(serializers.ModelSerializer):
             "is_available",
         ]
 
-class BookingSerializer(serializers.ModelSerializer):
 
+class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = [
@@ -87,8 +83,4 @@ class BookingSerializer(serializers.ModelSerializer):
             "created_at",
             "status",
         ]
-        read_only_fields = [
-            "id",
-            "created_at",
-            "status",
-        ]
+        read_only_fields = ["id", "created_at", "status"]

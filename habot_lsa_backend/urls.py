@@ -21,7 +21,7 @@ from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("", RedirectView.as_view(url="/api/v1/", permanent=False), name="root"),
-    path("api/v1/", include("bookings.urls")),
-    path("api/v1/auth/token/", obtain_auth_token, name="api-token"),
+    path("", RedirectView.as_view(url="/api/v1/", permanent=False), name="root"), #Open the API when visiting the root URL (i.e. 8000 port no).
+    path("api/v1/", include("bookings.urls")), # Booking API routes.
+    path("api/v1/auth/token/", obtain_auth_token, name="api-token"), # Token authentication.
 ]
